@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"log"
 	"mygame/config/enum"
 	"mygame/package/rootpath"
@@ -62,4 +63,9 @@ func init() {
 	if err := Config.Unmarshal(&Config); err != nil {
 		log.Fatal("[設定檔解析錯誤]: ", err)
 	}
+}
+
+func (c *config) Print() string {
+	b, _ := json.Marshal(c)
+	return string(b)
 }
