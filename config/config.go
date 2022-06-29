@@ -44,11 +44,11 @@ func init() {
 	Config.System.ServiceName = Config.Viper.GetString("SERVICE")
 	Config.System.Environment = Config.Viper.GetString("ENV")
 	// Root Path
-	projectRootPath, err := rootpath.GetFilePath(default_ProjectName)
+	path, err := rootpath.GetFilePath(default_ProjectName)
 	if err != nil {
 		log.Panic("[取得專案根目錄錯誤]: ", err)
 	}
-	Config.System.ProjectRootPath = projectRootPath
+	Config.System.ProjectRootPath = path
 	// Yaml
 	Config.SetConfigName(Config.System.Environment)
 	Config.SetConfigType("yaml")
@@ -66,6 +66,6 @@ func init() {
 }
 
 func (c *config) Print() string {
-	b, _ := json.Marshal(c)
+	b, _ := json.MarshalIndent(c, "", "    ")
 	return string(b)
 }

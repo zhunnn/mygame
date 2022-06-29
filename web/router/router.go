@@ -52,7 +52,7 @@ func (r *Router) Init() {
 }
 
 func (r *Router) Start(port string) {
-	logrot.Log.Infoln("Router Start on", port)
+	logrot.Log.Infoln("Router Serving on", port)
 	err := r.Run(port)
 	if err != nil {
 		logrot.Log.Panicln("[Router 啟動錯誤]:", err)

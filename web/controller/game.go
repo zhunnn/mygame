@@ -28,7 +28,7 @@ func (g *game) Connect(c *gin.Context) {
 		return
 	}
 	defer func() {
-		logrot.Log.Infoln("[Connect goroutine over]")
+		defer logrot.Log.Warnln("Goroutine 連線結束")
 		conn.Close()
 	}()
 
@@ -81,7 +81,7 @@ func (g *game) Connect(c *gin.Context) {
 
 	// Write
 	go func() {
-		defer logrot.Log.Infoln("Goroutine 寫入賽果結束")
+		defer logrot.Log.Warnln("Goroutine 寫入賽果結束")
 		for {
 			// 寫入 ws 數據
 			err = conn.WriteMessage(websocket.TextMessage, []byte("賽果"))
