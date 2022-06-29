@@ -8,8 +8,8 @@ import (
 
 func main() {
 	// Start
-	logrot.Warn("啟動服務: ", config.Config.System.ServiceName)
-	logrot.Warn("服務設定: ", config.Config.Print())
+	logrot.Log.Infoln("開啟服務:", config.Config.System.ServiceName)
+	logrot.Log.Infoln("服務設定:", config.Config.Print())
 	// HTTP Router
 	router := router.New(config.Config.System.Environment)
 	router.Init()

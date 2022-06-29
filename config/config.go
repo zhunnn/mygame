@@ -12,7 +12,7 @@ import (
 const (
 	default_ProjectName = "mygame"
 	default_ServiceName = "mygame"
-	default_Environment = enum.Environment_Production
+	default_Environment = enum.Environment_Local
 )
 
 var (
@@ -46,7 +46,7 @@ func init() {
 	// Root Path
 	projectRootPath, err := rootpath.GetFilePath(default_ProjectName)
 	if err != nil {
-		log.Fatal("[取得專案根目錄錯誤]: ", err)
+		log.Panic("[取得專案根目錄錯誤]: ", err)
 	}
 	Config.System.ProjectRootPath = projectRootPath
 	// Yaml
@@ -57,11 +57,11 @@ func init() {
 	Config.AddConfigPath(Config.System.ProjectRootPath + "/config/yaml")
 	// Read
 	if err := Config.ReadInConfig(); err != nil {
-		log.Fatal("[設定檔讀取錯誤]: ", err)
+		log.Panic("[設定檔讀取錯誤]: ", err)
 	}
 	// Unmarshal
 	if err := Config.Unmarshal(&Config); err != nil {
-		log.Fatal("[設定檔解析錯誤]: ", err)
+		log.Panic("[設定檔解析錯誤]: ", err)
 	}
 }
 

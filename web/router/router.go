@@ -16,11 +16,12 @@ type Router struct {
 }
 
 func New(env string) *Router {
-	gin.DefaultWriter = logrot.StandardLogger().Out
+	gin.DefaultWriter = logrot.Log.MultiWriter
 	// Set gin mode
 	switch env {
 	case enum.Environment_Local:
-		gin.SetMode(gin.DebugMode)
+		// gin.SetMode(gin.DebugMode)
+		gin.SetMode(gin.ReleaseMode)
 	default:
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -31,54 +32,52 @@ func New(env string) *Router {
 }
 
 func (r *Router) Init() {
-	logrot.Info("Router Init...")
+	logrot.Log.Infoln("Router Init...")
 	// Middleware
 	r.Use(middleware.GetMiddleware()...)
 	// Html
 	r.LoadHTMLGlob(config.Config.System.ProjectRootPath + "/web/view/template/*")
 	r.Static("/static", config.Config.System.ProjectRootPath+"/web/view/static")
-	// r.StaticFile("/favicon.ico", config.Config.System.ProjectRootPath+"/favicon.ico")
 	// Register
 	r.Register()
 	// Proxy
 	addr, err := net.LookupHost("LocalHost")
 	if err != nil {
-		logrot.Error("[查詢 Proxy 錯誤]:", err)
+		logrot.Log.Errorln("[查詢 Proxy 錯誤]:", err)
 	}
 	err = r.Engine.SetTrustedProxies(addr)
 	if err != nil {
-		logrot.Error("[設定 Proxy 錯誤]:", err)
+		logrot.Log.Errorln("[設定 Proxy 錯誤]:", err)
 	}
 }
 
 func (r *Router) Start(port string) {
-	logrot.Info("Router Start on ", port)
+	logrot.Log.Infoln("Router Start on", port)
 	err := r.Run(port)
 	if err != nil {
-		logrot.Fatal("[Router 啟動錯誤]:", err)
+		logrot.Log.Panicln("[Router 啟動錯誤]:", err)
 	}
 }
 
 func (r *Router) Register() {
-	// Websocket 心跳長連線
-	r.GET("/heartbeat", controller.HeartBeat)
-
-	// 檢查
-	r.GET("/", controller.Index)
-	r.GET("/index", controller.Index)
-	r.GET("/health", controller.HealthCheck)
-	r.GET("/ping", controller.Ping)
-	r.GET("/message", controller.Message)
+	// 基礎測試
+	r.GET("/", controller.Index.Home)
+	r.GET("/health", controller.Index.HealthCheck)
+	r.GET("/ping", controller.Index.Ping)
+	r.GET("/greet", controller.Index.Greet)
+	// 長連線
+	r.GET("/echo", controller.Index.Echo)
 
 	// 設定路由群組
 	user := r.Group("/user")
-	user.GET("/index", controller.User.Index)
+	user.GET("/", controller.User.Index)
 
 	// 設定路由群組
 	game := r.Group("/game")
-	game.GET("/index", controller.Game.Index)
+	game.GET("/", controller.Game.Index)
+	game.GET("/connect", controller.Game.Connect)
 
 	// 設定路由群組
 	post := r.Group("/post")
-	post.GET("/index", controller.Post.Index)
+	post.GET("/", controller.Post.Index)
 }

@@ -1,6 +1,6 @@
 # Server
 server:
   http:
-    port: ":8888"
+    port: ":6600"
   grpc:
-    port: ":4401"
+    port: ":6601"

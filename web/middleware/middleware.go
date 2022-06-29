@@ -34,7 +34,6 @@ func Recovery() gin.HandlerFunc {
 
 // Logger 設定
 func Logger() gin.HandlerFunc {
-	logger := logrot.StandardLogger()
 	return func(c *gin.Context) {
 		// 開始時間
 		startTime := time.Now()
@@ -55,17 +54,17 @@ func Logger() gin.HandlerFunc {
 		// 依照狀態碼區分日誌等級
 		switch statusCode / 100 {
 		case 1:
-			logger.Infof("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
+			logrot.Log.Infof("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
 		case 2:
-			logger.Debugf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
+			logrot.Log.Debugf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
 		case 3:
-			logger.Debugf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
+			logrot.Log.Warnf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
 		case 4:
-			logger.Errorf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
+			logrot.Log.Errorf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
 		case 5:
-			logger.Errorf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
+			logrot.Log.Errorf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
 		default:
-			logger.Debugf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
+			logrot.Log.Warnf("| %3d | %13v | %15s | %s | %s |", statusCode, latencyTime, clientIP, reqMethod, reqUri)
 		}
 	}
 }

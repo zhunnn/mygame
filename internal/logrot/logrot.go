@@ -1,9 +1,9 @@
 package logrot
 
 import (
+	"fmt"
 	"io"
 	"mygame/config"
-	"mygame/config/enum"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -11,49 +11,93 @@ import (
 )
 
 const (
-	default_TimeStampFormat            = "2006-01-02 15:04:05.000"
-	default_LogMessageFormat           = "[<time>] [<level>] <name> - <message>"
-	default_LogMessageFormatWithCaller = "[<time>] [<level>] <name> <caller> - <message>"
+	Environment_local        = "local"
+	Default_Timestamp_Format = "2006-01-02 15:04:05.000"
+	Default_Log_Extension    = ".log"
 )
 
-func init() {
-	// Logger
-	logrus.SetLevel(logrus.TraceLevel)
-	// 是否顯示呼叫函式
-	logrus.SetReportCaller(true)
-	// SetFormatter
-	switch config.Config.System.Environment {
-	case enum.Environment_Local:
-		logrus.SetFormatter(
-			&Formatter{
-				LogName:         config.Config.System.ServiceName,
-				TimestampFormat: default_TimeStampFormat,
-				MessageFormat:   default_LogMessageFormatWithCaller,
-			},
-		)
-	default:
-		logrus.SetFormatter(
-			&Formatter{
-				LogName:         config.Config.System.ServiceName,
-				TimestampFormat: default_TimeStampFormat,
-				MessageFormat:   default_LogMessageFormat,
-			},
-		)
+var (
+	defaultLogConfig = LogConfig{
+		Environment:     config.Config.System.Environment,
+		Name:            config.Config.System.ServiceName,
+		Directory:       config.Config.System.ProjectRootPath + "/logs/",
+		TimestampFormat: Default_Timestamp_Format,
+		MessageFormat:   fmt.Sprintf("[%v] [%v] %v - %v", FORMAT_STRING_TIME, FORMAT_STRING_LEVEL, FORMAT_STRING_NAME, FORMAT_STRING_MESSAGE),
+		Extension:       Default_Log_Extension,
+		LocalTime:       true,
+		MaxSize:         5,
+		MaxBackups:      5,
+		MaxAge:          10,
+		Compress:        false,
+		ReportCaller:    true,
 	}
-	// Rotate
-	rotation := &Rotation{
-		LogDirectory: config.Config.System.ProjectRootPath + "/logs/",
-		LogName:      config.Config.System.ServiceName,
-		LogExtension: ".log",
-		Logger: lumberjack.Logger{
-			Filename:   config.Config.System.ProjectRootPath + "/logs/" + config.Config.System.ServiceName + ".log",
-			LocalTime:  true,
-			MaxSize:    1,  // MB
-			MaxBackups: 3,  // Number
-			MaxAge:     28, // Days
-			Compress:   false,
+	// Example: logrot.Log.Errorln("err:", err)
+	Log = New(defaultLogConfig)
+)
+
+type LogConfig struct {
+	Environment     string
+	Name            string
+	Directory       string
+	TimestampFormat string
+	MessageFormat   string
+	Extension       string
+	LocalTime       bool
+	MaxSize         int // MB
+	MaxBackups      int // Num
+	MaxAge          int // Day
+	Compress        bool
+	ReportCaller    bool
+}
+
+type logrot struct {
+	*logrus.Logger
+	MultiWriter io.Writer
+}
+
+func New(config LogConfig) *logrot {
+	// Console log:
+	// Instance
+	log := &logrot{Logger: logrus.New()}
+	// Level
+	log.SetLevel(logrus.TraceLevel)
+	// Caller
+	if config.ReportCaller {
+		log.SetReportCaller(true)
+	}
+	// Formatter
+	switch config.Environment {
+	case Environment_local:
+		// Local log with color
+		log.SetFormatter(NewFormatter(config.Name, config.TimestampFormat, config.MessageFormat, true))
+	default:
+		// Other Environment log without color
+		log.SetFormatter(NewFormatter(config.Name, config.TimestampFormat, config.MessageFormat, false))
+	}
+	// Output
+	log.SetOutput(os.Stdout)
+	// File log:
+	// Writer
+	writer := &Writer{
+		LogDirectory: config.Directory,
+		LogName:      config.Name,
+		LogExtension: config.Extension,
+		Logger: &lumberjack.Logger{
+			Filename:   config.Directory + config.Name + config.Extension,
+			LocalTime:  config.LocalTime,
+			MaxSize:    config.MaxSize,    // MB
+			MaxBackups: config.MaxBackups, // Num
+			MaxAge:     config.MaxAge,     // Days
+			Compress:   config.Compress,
 		},
 	}
-	mw := io.MultiWriter(os.Stdout, rotation)
-	logrus.SetOutput(mw)
+	log.MultiWriter = io.MultiWriter(os.Stdout, writer)
+	// Hook
+	log.AddHook(&RotateFileHook{
+		logWriter: writer,
+		Level:     logrus.TraceLevel,
+		// Log file without color
+		Formatter: NewFormatter(config.Name, config.TimestampFormat, config.MessageFormat, false),
+	})
+	return log
 }

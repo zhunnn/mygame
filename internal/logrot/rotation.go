@@ -1,6 +1,7 @@
 package logrot
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -11,13 +12,13 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-type Rotation struct {
+type Writer struct {
 	mu sync.Mutex
-	lumberjack.Logger
+	*lumberjack.Logger
 	LogDirectory string
 	LogName      string
 	LogExtension string
-	ShouldRotate bool
+	shouldRotate bool
 }
 
 type LogFile struct {
@@ -25,22 +26,30 @@ type LogFile struct {
 	Name  string
 }
 
-func (r *Rotation) Write(p []byte) (n int, err error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (w *Writer) Write(p []byte) (n int, err error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	// Inherit
-	n, err = r.Logger.Write(p)
+	n, err = w.Logger.Write(p)
+	if err != nil {
+		fmt.Println("[Logger.Write]:", err)
+		return n, err
+	}
 	// Get Files
-	files, err := os.ReadDir(r.LogDirectory)
+	files, err := os.ReadDir(w.LogDirectory)
+	if err != nil {
+		fmt.Println("[ReadDir]:", err)
+		return n, err
+	}
 	// Filter
 	var list = make([]LogFile, 0)
 	for _, file := range files {
 		// Extension match
-		extIndex := strings.Index(file.Name(), r.LogExtension) // .log
+		extIndex := strings.Index(file.Name(), w.LogExtension) // .log
 		if extIndex != -1 {
 			name := file.Name()[:extIndex]
-			logNameWithHyphen := r.LogName + "-" // logname-
-			logNameWithPeriod := r.LogName + "." // logname.
+			logNameWithHyphen := w.LogName + "-" // logname-
+			logNameWithPeriod := w.LogName + "." // logname.
 			logNameIndexWithHyphen := strings.Index(name, logNameWithHyphen)
 			logNameIndexWithPeriod := strings.Index(name, logNameWithPeriod)
 			switch {
@@ -51,7 +60,7 @@ func (r *Rotation) Write(p []byte) (n int, err error) {
 				if err == nil {
 					// List append
 					list = append(list, LogFile{Name: file.Name(), Index: 0})
-					r.ShouldRotate = true
+					w.shouldRotate = true
 				}
 			case logNameIndexWithPeriod != -1:
 				// logname.1.log
@@ -65,7 +74,7 @@ func (r *Rotation) Write(p []byte) (n int, err error) {
 		}
 	}
 	// Rotate when it has index zero file
-	if r.ShouldRotate {
+	if w.shouldRotate {
 		// Selection Sort
 		for i := range list {
 			for j := i + 1; j < len(list); j++ {
@@ -78,18 +87,18 @@ func (r *Rotation) Write(p []byte) (n int, err error) {
 		// Rename
 		for _, v := range list {
 			newIndex := v.Index + 1
-			if newIndex > r.MaxBackups {
+			if newIndex > w.MaxBackups {
 				// Remove out of limit
-				os.Remove(r.LogDirectory + v.Name)
+				os.Remove(w.LogDirectory + v.Name)
 			} else {
 				// Rename
-				err := os.Rename(r.LogDirectory+v.Name, r.LogDirectory+r.LogName+"."+strconv.Itoa(newIndex)+r.LogExtension)
+				err := os.Rename(w.LogDirectory+v.Name, w.LogDirectory+w.LogName+"."+strconv.Itoa(newIndex)+w.LogExtension)
 				if err != nil {
-					log.Println("[Log rename error]:", r.LogDirectory+v.Name)
+					log.Println("[Log rename error]:", w.LogDirectory+v.Name)
 				}
 			}
 		}
-		r.ShouldRotate = false
+		w.shouldRotate = false
 	}
 	return n, err
 }

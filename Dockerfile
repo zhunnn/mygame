@@ -23,4 +23,4 @@ ENTRYPOINT ["./app"]
 # 執行容器帶入環境變數
 # 本地的 4400 對應到容器的 80
 # 本地的 4401 對應到容器的 50051
-# docker run -d --name mygame -e SERVICE=mygame -e ENV=docker -p 4400:80 -p 4401:50051 mygame
+# docker run -d --name mygame -e SERVICE=mygame -e ENV=docker -p 6600:80 -p 6601:50051 mygame
